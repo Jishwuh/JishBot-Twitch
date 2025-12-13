@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - JishBot</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="auth">
+  <div class="card auth-card">
+    <h1>Access Dashboard</h1>
+    {% if error %}
+      <div class="notice error">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="/login">
+      <label for="token">Dashboard Token</label>
+      <input type="password" id="token" name="token" placeholder="WEB_SECRET_KEY" required>
+      <button type="submit">Continue</button>
+    </form>
+  </div>
+</body>
+</html>

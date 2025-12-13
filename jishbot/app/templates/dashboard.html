@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid">
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Custom Commands</h2>
+        <p>Create or edit a chat command.</p>
+      </div>
+    </div>
+    <form class="form-grid" method="post" action="/dashboard/commands/{{ channel }}/save">
+      <label>Name <input name="name" placeholder="hello" required></label>
+      <label>Response <textarea name="response" rows="2" placeholder="Hi ${user}!"></textarea></label>
+      <label>Permission
+        <select name="permission">
+          <option>everyone</option>
+          <option>regular</option>
+          <option>subscriber</option>
+          <option>moderator</option>
+          <option>broadcaster</option>
+        </select>
+      </label>
+      <label>Cooldown (global sec) <input type="number" min="0" name="cooldown_global" value="0"></label>
+      <label>Cooldown (per user sec) <input type="number" min="0" name="cooldown_user" value="0"></label>
+      <div class="actions">
+        <button type="submit">Save Command</button>
+        <small>Variables: ${user} ${channel} ${count} ${uptime} ${game} ${title}</small>
+      </div>
+    </form>
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Permission</th><th>CD g/u</th><th>Response</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for cmd in commands %}
+          <tr>
+            <td>!{{ cmd["name"] }}</td>
+            <td>{{ cmd["permission"] }}</td>
+            <td>{{ cmd["cooldown_global"] }}/{{ cmd["cooldown_user"] }}</td>
+            <td class="mono">{{ cmd["response"] }}</td>
+            <td>
+              <form method="post" action="/dashboard/commands/{{ channel }}/{{ cmd['name'] }}/delete">
+                <button class="ghost" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5">No commands yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Timers</h2>
+        <p>Rotate messages at intervals.</p>
+      </div>
+    </div>
+    <form class="form-grid" method="post" action="/dashboard/timers/{{ channel }}/save">
+      <label>Name <input name="name" placeholder="shoutouts" required></label>
+      <label>Interval (minutes) <input type="number" min="1" name="interval_minutes" value="5"></label>
+      <label>Messages (one per line)
+        <textarea name="messages" rows="3" placeholder="Line one&#10;Line two"></textarea>
+      </label>
+      <label class="inline"><input type="checkbox" name="require_chat_activity"> Only when chat is active</label>
+      <label class="inline"><input type="checkbox" name="enabled" checked> Enabled</label>
+      <div class="actions"><button type="submit">Save Timer</button></div>
+    </form>
+    <table>
+      <thead><tr><th>Name</th><th>Every</th><th>Messages</th><th>Flags</th><th></th></tr></thead>
+      <tbody>
+        {% for t in timers %}
+          <tr>
+            <td>{{ t.name }}</td>
+            <td>{{ t.interval_minutes }}m</td>
+            <td class="mono">{{ ", ".join(t.messages) }}</td>
+            <td>{% if t.enabled %}on{% else %}off{% endif %} / {% if t.require_chat_activity %}activity{% else %}always{% endif %}</td>
+            <td>
+              <form method="post" action="/dashboard/timers/{{ channel }}/{{ t.name }}/delete">
+                <button class="ghost" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5">No timers yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Filters</h2>
+        <p>Word/phrase/regex timeouts.</p>
+      </div>
+    </div>
+    <form class="form-grid" method="post" action="/dashboard/filters/{{ channel }}/save">
+      <label>Type
+        <select name="type">
+          <option value="word">word</option>
+          <option value="phrase">phrase</option>
+          <option value="regex">regex</option>
+        </select>
+      </label>
+      <label>Pattern <input name="pattern" placeholder="badword" required></label>
+      <label class="inline"><input type="checkbox" name="enabled" checked> Enabled</label>
+      <div class="actions"><button type="submit">Add Filter</button></div>
+    </form>
+    <table>
+      <thead><tr><th>Type</th><th>Pattern</th><th>Enabled</th><th></th></tr></thead>
+      <tbody>
+        {% for f in filters %}
+          <tr>
+            <td>{{ f["type"] }}</td>
+            <td class="mono">{{ f["pattern"] }}</td>
+            <td>{{ "yes" if f["enabled"] else "no" }}</td>
+            <td>
+              <form method="post" action="/dashboard/filters/{{ channel }}/{{ f['id'] }}/delete">
+                <button class="ghost" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4">No filters yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Link Protection</h2>
+        <p>Block links and allow trusted roles.</p>
+      </div>
+    </div>
+    <form class="form-grid" method="post" action="/dashboard/links/{{ channel }}/save">
+      <label class="inline"><input type="checkbox" name="enabled" {% if links.enabled %}checked{% endif %}> Block links</label>
+      <label class="inline"><input type="checkbox" name="allow_mod" {% if links.allow_mod %}checked{% endif %}> Allow mods</label>
+      <label class="inline"><input type="checkbox" name="allow_sub" {% if links.allow_sub %}checked{% endif %}> Allow subs</label>
+      <label class="inline"><input type="checkbox" name="allow_regular" {% if links.allow_regular %}checked{% endif %}> Allow regulars</label>
+      <label>Allowed domains (comma separated)
+        <input name="allowed_domains" value="{{ links.allowed_domains | join(', ') }}">
+      </label>
+      <div class="actions"><button type="submit">Save Link Settings</button></div>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Giveaway</h2>
+        <p>Keyword-based entries.</p>
+      </div>
+    </div>
+    <div class="form-grid">
+      <form method="post" action="/dashboard/giveaway/{{ channel }}/start">
+        <label>Keyword <input name="keyword" placeholder="!enter" required></label>
+        <button type="submit">Start</button>
+      </form>
+      <form method="post" action="/dashboard/giveaway/{{ channel }}/pick">
+        <button type="submit">Pick Winner</button>
+      </form>
+      <form method="post" action="/dashboard/giveaway/{{ channel }}/end">
+        <button type="submit" class="ghost">End</button>
+      </form>
+    </div>
+    {% if giveaway %}
+      <p>Status: {{ "active" if giveaway.is_active else "inactive" }} {% if giveaway.keyword %} (keyword: {{ giveaway.keyword }}){% endif %}</p>
+      <p>Entries: {{ giveaway.entries | length }}</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
