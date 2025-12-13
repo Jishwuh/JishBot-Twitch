@@ -5,6 +5,7 @@ import uvicorn
 
 from jishbot.app.bot import JishBot
 from jishbot.app.db import database
+from jishbot.app.services import notifications_service
 from jishbot.app.settings import settings
 from jishbot.app.web.webapp import app as fastapi_app
 from jishbot.app.services import twitch_api_service
@@ -34,7 +35,7 @@ async def main():
         bot_id = user["id"]
     owner_id = settings.twitch_owner_id or bot_id
     bot = JishBot(channels, bot_id=bot_id, owner_id=owner_id)
-    await asyncio.gather(bot.start(), start_web())
+    await asyncio.gather(bot.start(), start_web(), notifications_service.run_poll_loop(channels))
 
 
 if __name__ == "__main__":

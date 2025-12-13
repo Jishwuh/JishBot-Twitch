@@ -173,5 +173,27 @@
       <p>Entries: {{ giveaway.entries | length }}</p>
     {% endif %}
   </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Discord Notifications</h2>
+        <p>Send a live notification to a Discord webhook.</p>
+      </div>
+    </div>
+    <form class="form-grid" method="post" action="/dashboard/notifications/{{ channel }}/save">
+      <label>Discord Webhook URL
+        <input type="text" name="webhook_url" placeholder="https://discord.com/api/webhooks/..." value="{{ webhook_url or '' }}">
+      </label>
+      <div class="actions">
+        <button type="submit">Save Notification</button>
+        <small>Bot polls Twitch every ~120s and posts once per go-live.</small>
+      </div>
+    </form>
+    <form method="post" action="/dashboard/notifications/{{ channel }}/test">
+      <button type="submit" class="ghost">Send Test Webhook</button>
+      <small>This sends a one-time test embed (no pings).</small>
+    </form>
+  </section>
 </div>
 {% endblock %}

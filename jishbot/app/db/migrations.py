@@ -3,7 +3,7 @@ import time
 import aiosqlite
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 async def ensure_schema(db: aiosqlite.Connection) -> None:
@@ -18,15 +18,20 @@ async def ensure_schema(db: aiosqlite.Connection) -> None:
     await db.commit()
     async with db.execute("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1") as cursor:
         row = await cursor.fetchone()
-    if row and row["version"] >= SCHEMA_VERSION:
-        return
-
-    await apply_v1(db)
-    await db.execute(
-        "INSERT INTO schema_version(version, applied_at) VALUES(?, ?)",
-        (SCHEMA_VERSION, int(time.time())),
-    )
-    await db.commit()
+    current_version = row["version"] if row else 0
+    if current_version < 1:
+        await apply_v1(db)
+        current_version = 1
+    if current_version < 2:
+        await apply_v2(db)
+        current_version = 2
+    if row is None or row["version"] != current_version:
+        await db.execute("DELETE FROM schema_version")
+        await db.execute(
+            "INSERT INTO schema_version(version, applied_at) VALUES(?, ?)",
+            (current_version, int(time.time())),
+        )
+        await db.commit()
 
 
 async def apply_v1(db: aiosqlite.Connection) -> None:
@@ -112,6 +117,20 @@ async def apply_v1(db: aiosqlite.Connection) -> None:
             type TEXT NOT NULL,
             reason TEXT NOT NULL,
             created_at INTEGER NOT NULL
+        );
+        """
+    )
+    await db.commit()
+
+
+async def apply_v2(db: aiosqlite.Connection) -> None:
+    await db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS notifications(
+            channel_id TEXT PRIMARY KEY,
+            webhook_url TEXT,
+            last_status TEXT,
+            last_notified_at INTEGER
         );
         """
     )

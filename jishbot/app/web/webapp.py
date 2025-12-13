@@ -74,6 +74,7 @@ async def dashboard(request: Request, channel: Optional[str] = None, notice: Opt
         return auth_redirect()
     channels = await get_channels()
     active_channel = (channel or (channels[0] if channels else "")).lstrip("#").lower()
+    from jishbot.app.services import notifications_service
     db = await database.get_db()
     # Commands
     async with db.execute(
@@ -139,6 +140,7 @@ async def dashboard(request: Request, channel: Optional[str] = None, notice: Opt
             "keyword": giveaway_row["keyword"],
             "entries": json.loads(giveaway_row["entries_json"] or "[]"),
         }
+    webhook_url = await notifications_service.get_webhook(active_channel)
     return templates.TemplateResponse(
         "dashboard.html",
         {
@@ -150,6 +152,7 @@ async def dashboard(request: Request, channel: Optional[str] = None, notice: Opt
             "filters": filters,
             "links": link_settings,
             "giveaway": giveaway,
+            "webhook_url": webhook_url,
             "notice": notice,
         },
     )
@@ -593,3 +596,28 @@ async def dashboard_pick_giveaway(request: Request, channel: str):
     winner = await giveaways_service.pick_winner(channel)
     msg = f"Winner: {winner[1]}" if winner else "No entries to pick"
     return redirect_to_dashboard(channel, msg)
+
+
+@app.post("/dashboard/notifications/{channel}/save")
+async def dashboard_save_notification(request: Request, channel: str, webhook_url: str = Form("")):
+    if not is_authed(request):
+        return auth_redirect()
+    from jishbot.app.services import notifications_service
+
+    channel = channel.lower()
+    await notifications_service.set_webhook(channel, webhook_url.strip() or None)
+    return redirect_to_dashboard(channel, "Notification settings saved")
+
+
+@app.post("/dashboard/notifications/{channel}/test")
+async def dashboard_test_notification(request: Request, channel: str):
+    if not is_authed(request):
+        return auth_redirect()
+    from jishbot.app.services import notifications_service
+
+    channel = channel.lower()
+    webhook = await notifications_service.get_webhook(channel)
+    if not webhook:
+        return redirect_to_dashboard(channel, "No webhook configured to test.")
+    await notifications_service.send_test(webhook, channel)
+    return redirect_to_dashboard(channel, "Test notification sent (this was only a test).")

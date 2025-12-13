@@ -23,10 +23,12 @@ python -m jishbot.app.main
 - `BASE_URL` (for OAuth later)
 - `SQLITE_PATH` (default `./jishbot.db`)
 - `LOG_LEVEL` (INFO/DEBUG/etc)
+- `DISCORD_WEBHOOK_URL` (optional per-channel via dashboard; leave blank if unused)
 
 ## 🖥️ Dashboard
 - Go to `http://localhost:8000/login`, enter `WEB_SECRET_KEY`, then manage at `/dashboard`.
 - Features: channel picker, create/edit/delete commands, timers, filters, link protection, giveaways.
+- Discord: add a webhook URL per channel; bot polls Twitch (~120s) and sends a single live notification when you go live.
 - API (JSON) uses header `X-Auth-Token: <WEB_SECRET_KEY>`:
   - `GET /health`
   - `GET/POST/DELETE /api/commands/{channel}`
