@@ -25,6 +25,12 @@ python -m jishbot.app.main
 - `LOG_LEVEL` (INFO/DEBUG/etc)
 - `DISCORD_WEBHOOK_URL` (optional per-channel via dashboard; leave blank if unused)
 
+### Twitch token scopes (important)
+- Use a **user token** for the broadcaster account (not app token) with scopes:
+  - `channel:manage:broadcast` (required for `!game` / `!title`)
+  - `chat:read` and `chat:edit`
+- Put that token in `TWITCH_BOT_TOKEN` (keep the `oauth:` prefix). If the bot account differs from the channel owner, the token must belong to the broadcaster you’re editing.
+
 ## 🖥️ Dashboard
 - Go to `http://localhost:8000/login`, enter `WEB_SECRET_KEY`, then manage at `/dashboard`.
 - Features: channel picker, create/edit/delete commands, timers, filters, link protection, giveaways.
