@@ -12,6 +12,8 @@ class Settings:
     twitch_bot_token: str
     twitch_bot_nick: str
     twitch_bot_id: str
+    twitch_broadcaster_token: str | None = None
+    twitch_broadcaster_id: str | None = None
     twitch_owner_id: str | None = None
     twitch_channels: List[str] = field(default_factory=list)
     web_secret_key: str = "dev-secret"
@@ -31,6 +33,8 @@ class Settings:
             twitch_bot_token=os.getenv("TWITCH_BOT_TOKEN", ""),
             twitch_bot_nick=os.getenv("TWITCH_BOT_NICK", ""),
             twitch_bot_id=os.getenv("TWITCH_BOT_ID", os.getenv("TWITCH_BOT_NICK", "")),
+            twitch_broadcaster_token=os.getenv("TWITCH_BROADCASTER_TOKEN"),
+            twitch_broadcaster_id=os.getenv("TWITCH_BROADCASTER_ID"),
             twitch_owner_id=os.getenv("TWITCH_OWNER_ID"),
             twitch_channels=channels,
             web_secret_key=os.getenv("WEB_SECRET_KEY", "dev-secret"),

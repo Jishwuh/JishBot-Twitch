@@ -15,8 +15,10 @@ python -m jishbot.app.main
 ## 🔑 Configure `.env`
 - `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET`
 - `TWITCH_BOT_TOKEN` (OAuth, prefixed with `oauth:`)
+- `TWITCH_BROADCASTER_TOKEN` (optional; if set, used for !game/!title)
 - `TWITCH_BOT_NICK` (bot username)
 - `TWITCH_BOT_ID` (numeric user id; auto-resolves from nick if blank)
+- `TWITCH_BROADCASTER_ID` (optional; numeric id for broadcaster; falls back to bot id/login lookup)
 - `TWITCH_OWNER_ID` (optional; defaults to bot id)
 - `TWITCH_CHANNELS` (comma list, no `#`)
 - `WEB_SECRET_KEY` (dashboard/login & API header)
@@ -26,10 +28,10 @@ python -m jishbot.app.main
 - `DISCORD_WEBHOOK_URL` (optional per-channel via dashboard; leave blank if unused)
 
 ### Twitch token scopes (important)
-- Use a **user token** for the broadcaster account (not app token) with scopes:
-  - `channel:manage:broadcast` (required for `!game` / `!title`)
-  - `chat:read` and `chat:edit`
-- Put that token in `TWITCH_BOT_TOKEN` (keep the `oauth:` prefix). If the bot account differs from the channel owner, the token must belong to the broadcaster you’re editing.
+- You can use:
+  - One token for everything (put in `TWITCH_BOT_TOKEN`) that has scopes `channel:manage:broadcast` + `chat:read` + `chat:edit`, and belongs to the broadcaster.
+  - Or two tokens: `TWITCH_BOT_TOKEN` for chat (chat:read/chat:edit) and `TWITCH_BROADCASTER_TOKEN` for `!game/!title` (channel:manage:broadcast) belonging to the broadcaster.
+- Keep the `oauth:` prefix in env values. `TWITCH_BROADCASTER_ID` can be set if the broadcaster differs from the bot.
 
 ## 🖥️ Dashboard
 - Go to `http://localhost:8000/login`, enter `WEB_SECRET_KEY`, then manage at `/dashboard`.

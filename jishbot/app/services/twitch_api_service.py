@@ -34,8 +34,10 @@ async def _get_app_token() -> str:
     return _app_token
 
 
-async def _auth_headers(use_app_token: bool = True) -> dict:
-    token = settings.twitch_bot_token.replace("oauth:", "")
+async def _auth_headers(use_app_token: bool = True, use_broadcaster_token: bool = False) -> dict:
+    token = settings.twitch_bot_token.replace("oauth:", "") if settings.twitch_bot_token else ""
+    if use_broadcaster_token and settings.twitch_broadcaster_token:
+        token = settings.twitch_broadcaster_token.replace("oauth:", "")
     if use_app_token or not token:
         token = await _get_app_token()
     return {
@@ -173,8 +175,11 @@ async def get_channel_info(channel_login: str) -> Optional[dict]:
 
 
 async def set_channel_game(channel_login: str, game_name: str) -> bool:
-    user = await get_user(channel_login)
-    if not user:
+    broadcaster_id = settings.twitch_broadcaster_id or settings.twitch_bot_id
+    if not broadcaster_id:
+        user = await get_user(channel_login)
+        broadcaster_id = user["id"] if user else None
+    if not broadcaster_id:
         return False
     async with httpx.AsyncClient() as client:
         search = await client.get(
@@ -188,22 +193,25 @@ async def set_channel_game(channel_login: str, game_name: str) -> bool:
         game_id = game_data[0]["id"]
         resp = await client.patch(
             "https://api.twitch.tv/helix/channels",
-            headers=await _auth_headers(use_app_token=False),
-            params={"broadcaster_id": user["id"]},
+            headers=await _auth_headers(use_app_token=False, use_broadcaster_token=True),
+            params={"broadcaster_id": broadcaster_id},
             json={"game_id": game_id},
         )
         return resp.status_code in (200, 204)
 
 
 async def set_channel_title(channel_login: str, title: str) -> bool:
-    user = await get_user(channel_login)
-    if not user:
+    broadcaster_id = settings.twitch_broadcaster_id or settings.twitch_bot_id
+    if not broadcaster_id:
+        user = await get_user(channel_login)
+        broadcaster_id = user["id"] if user else None
+    if not broadcaster_id:
         return False
     async with httpx.AsyncClient() as client:
         resp = await client.patch(
             "https://api.twitch.tv/helix/channels",
-            headers=await _auth_headers(use_app_token=False),
-            params={"broadcaster_id": user["id"]},
+            headers=await _auth_headers(use_app_token=False, use_broadcaster_token=True),
+            params={"broadcaster_id": broadcaster_id},
             json={"title": title[:140]},
         )
         return resp.status_code in (200, 204)
