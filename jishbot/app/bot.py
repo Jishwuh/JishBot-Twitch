@@ -3,7 +3,7 @@ import json
 import logging
 import random
 import time
-from typing import Dict
+from typing import Dict, List
 
 from twitchio.ext import commands
 
@@ -107,7 +107,28 @@ class JishBot(commands.Bot):
 
     async def queue_message(self, channel_name: str, content: str) -> None:
         await self._ensure_sender(channel_name)
-        await self.message_queues[channel_name].put(content)
+        for chunk in self._chunk_message(content):
+            await self.message_queues[channel_name].put(chunk)
+
+    @staticmethod
+    def _chunk_message(content: str, limit: int = 450) -> List[str]:
+        if len(content) <= limit:
+            return [content]
+        chunks: List[str] = []
+        remaining = content
+        separators = [" | ", ", ", " "]
+        while len(remaining) > limit:
+            cut = limit
+            for sep in separators:
+                idx = remaining.rfind(sep, 0, limit)
+                if idx != -1:
+                    cut = idx + len(sep)
+                    break
+            chunks.append(remaining[:cut].strip())
+            remaining = remaining[cut:].strip()
+        if remaining:
+            chunks.append(remaining)
+        return chunks
 
     async def _sender_loop(self, channel_name: str, queue: asyncio.Queue[str]) -> None:
         while True:
@@ -142,10 +163,16 @@ class JishBot(commands.Bot):
 
         if cmd == "help":
             # Built-in help, filtered by permission
+            scope = args[0].lower() if args else "default"
             help_items = []
             for entry in BUILTIN_HELP:
-                if await permissions_service.has_permission(message, entry["perm"]):
-                    help_items.append(entry["label"])
+                if scope == "mod" and entry["perm"] != "moderator":
+                    continue
+                if scope == "all":
+                    pass
+                elif not await permissions_service.has_permission(message, entry["perm"]):
+                    continue
+                help_items.append(entry["label"])
             names = await commands_service.list_allowed_command_names(channel_id, message)
             if names:
                 help_items.append(f"Custom: {', '.join(names[:15])}" + ("" if len(names) <= 15 else " ..."))
