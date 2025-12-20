@@ -271,3 +271,16 @@ async def start_prediction(title: str, outcomes: list[str], duration: int = 120)
             },
         )
         return resp.status_code in (200, 201)
+
+
+async def create_stream_marker(description: str) -> bool:
+    broadcaster_id = settings.twitch_broadcaster_id or settings.twitch_bot_id
+    if not broadcaster_id:
+        return False
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            "https://api.twitch.tv/helix/streams/markers",
+            headers=await _auth_headers(use_app_token=False, use_broadcaster_token=True),
+            json={"user_id": broadcaster_id, "description": description[:140]},
+        )
+        return resp.status_code in (200, 201)

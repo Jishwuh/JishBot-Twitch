@@ -21,6 +21,33 @@ from jishbot.app.settings import settings
 
 log = logging.getLogger(__name__)
 
+BUILTIN_HELP = [
+    {"label": "!commands", "perm": "everyone"},
+    {"label": "!help", "perm": "everyone"},
+    {"label": "!uptime", "perm": "everyone"},
+    {"label": "!game", "perm": "everyone"},
+    {"label": "!title", "perm": "everyone"},
+    {"label": "!accountage [user]", "perm": "everyone"},
+    {"label": "!followage [follower] [channel]", "perm": "everyone"},
+    {"label": "!8ball <question>", "perm": "everyone"},
+    {"label": "!game <new>", "perm": "moderator"},
+    {"label": "!title <new>", "perm": "moderator"},
+    {"label": "!regular add/remove/list", "perm": "moderator"},
+    {"label": "!command add|edit|del", "perm": "moderator"},
+    {"label": "!timer add <name> <interval_minutes> <msg1|msg2>", "perm": "moderator"},
+    {"label": "!timer del <name>", "perm": "moderator"},
+    {"label": "!giveaway start|pick|end", "perm": "moderator"},
+    {"label": "!counter set|inc|dec <key> [value]", "perm": "moderator"},
+    {"label": "!slow <seconds>/!slowoff", "perm": "moderator"},
+    {"label": "!emoteonly/!emoteoff", "perm": "moderator"},
+    {"label": "!clear", "perm": "moderator"},
+    {"label": "!shoutout <user>", "perm": "moderator"},
+    {"label": "!permit <user>", "perm": "moderator"},
+    {"label": "!poll <secs> <question> | opts", "perm": "moderator"},
+    {"label": "!prediction <secs> <title> | outcome1 | outcome2", "perm": "moderator"},
+    {"label": "!marker [desc]", "perm": "moderator"},
+]
+
 
 class JishBot(commands.Bot):
     def __init__(self, channels: list[str], bot_id: str, owner_id: str | None) -> None:
@@ -113,6 +140,18 @@ class JishBot(commands.Bot):
             await self.queue_message(channel_id, f"Commands: {snippet}")
             return
 
+        if cmd == "help":
+            # Built-in help, filtered by permission
+            help_items = []
+            for entry in BUILTIN_HELP:
+                if await permissions_service.has_permission(message, entry["perm"]):
+                    help_items.append(entry["label"])
+            names = await commands_service.list_allowed_command_names(channel_id, message)
+            if names:
+                help_items.append(f"Custom: {', '.join(names[:15])}" + ("" if len(names) <= 15 else " ..."))
+            await self.queue_message(channel_id, " | ".join(help_items))
+            return
+
         if cmd == "uptime":
             uptime = await twitch_api_service.get_stream_uptime(channel_id)
             await self.queue_message(channel_id, uptime)
@@ -140,6 +179,14 @@ class JishBot(commands.Bot):
             else:
                 info = await twitch_api_service.get_channel_info(channel_id)
                 await self.queue_message(channel_id, info["title"] if info else "offline")
+            return
+
+        if cmd == "marker":
+            if not await permissions_service.has_permission(message, "moderator"):
+                return
+            desc = " ".join(args) if args else "Marked by chat"
+            ok = await twitch_api_service.create_stream_marker(desc)
+            await self.queue_message(channel_id, "Marker added." if ok else "Failed to add marker (check token/scopes/live).")
             return
 
         if cmd == "slow":
