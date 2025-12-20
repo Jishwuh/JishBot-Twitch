@@ -106,7 +106,7 @@ class JishBot(commands.Bot):
 
         # Built-in commands
         if cmd == "commands":
-            names = await commands_service.list_command_names(channel_id)
+            names = await commands_service.list_allowed_command_names(channel_id, message)
             snippet = ", ".join(names[:25])
             if len(names) > 25:
                 snippet += f" (+{len(names)-25} more)"
@@ -140,6 +140,104 @@ class JishBot(commands.Bot):
             else:
                 info = await twitch_api_service.get_channel_info(channel_id)
                 await self.queue_message(channel_id, info["title"] if info else "offline")
+            return
+
+        if cmd == "slow":
+            if not await permissions_service.has_permission(message, "moderator"):
+                return
+            if not args:
+                await self.queue_message(channel_id, "Usage: !slow <seconds> (mods+)")
+                return
+            await self.queue_message(channel_id, f"/slow {args[0]}")
+            return
+
+        if cmd == "slowoff":
+            if not await permissions_service.has_permission(message, "moderator"):
+                return
+            await self.queue_message(channel_id, "/slowoff")
+            return
+
+        if cmd == "emoteonly":
+            if not await permissions_service.has_permission(message, "moderator"):
+                return
+            await self.queue_message(channel_id, "/emoteonly")
+            return
+
+        if cmd == "emoteoff":
+            if not await permissions_service.has_permission(message, "moderator"):
+                return
+            await self.queue_message(channel_id, "/emoteonlyoff")
+            return
+
+        if cmd == "clear":
+            if not await permissions_service.has_permission(message, "moderator"):
+                return
+            await self.queue_message(channel_id, "/clear")
+            return
+
+        if cmd == "shoutout":
+            if not await permissions_service.has_permission(message, "moderator"):
+                return
+            if not args:
+                await self.queue_message(channel_id, "Usage: !shoutout <user> (mods+)")
+                return
+            target = args[0].lstrip("@")
+            await self.queue_message(channel_id, f"/shoutout {target}")
+            return
+
+        if cmd == "permit":
+            if not await permissions_service.has_permission(message, "moderator"):
+                return
+            if not args:
+                await self.queue_message(channel_id, "Usage: !permit <user> (mods+)")
+                return
+            target = args[0].lstrip("@")
+            moderation_service.permit_user(channel_id, target.lower())
+            await self.queue_message(channel_id, f"{target} can post a link for 60s.")
+            return
+
+        if cmd == "poll":
+            if not await permissions_service.has_permission(message, "moderator"):
+                return
+            if len(args) < 3:
+                await self.queue_message(channel_id, "Usage: !poll <duration_sec> <question> | <option1> | <option2> (...) (mods+)")
+                return
+            try:
+                duration = int(args[0])
+            except ValueError:
+                await self.queue_message(channel_id, "Poll duration must be a number of seconds.")
+                return
+            rest = " ".join(args[1:])
+            parts = [p.strip() for p in rest.split("|") if p.strip()]
+            if len(parts) < 3:
+                await self.queue_message(channel_id, "Usage: !poll <duration_sec> <question> | <option1> | <option2> (...) (mods+)")
+                return
+            question = parts[0]
+            options = parts[1:]
+            ok = await twitch_api_service.start_poll(question, options, duration)
+            await self.queue_message(channel_id, "Poll started." if ok else "Failed to start poll (check token/scopes).")
+            return
+
+        if cmd == "prediction":
+            if not await permissions_service.has_permission(message, "moderator"):
+                return
+            if len(args) < 3:
+                await self.queue_message(channel_id, "Usage: !prediction <duration_sec> <title> | <outcome1> | <outcome2> (mods+)")
+                return
+            try:
+                duration = int(args[0])
+            except ValueError:
+                await self.queue_message(channel_id, "Prediction duration must be a number of seconds.")
+                return
+            rest = " ".join(args[1:])
+            parts = [p.strip() for p in rest.split("|") if p.strip()]
+            if len(parts) < 3:
+                await self.queue_message(channel_id, "Usage: !prediction <duration_sec> <title> | <outcome1> | <outcome2> (mods+)")
+                return
+            title = parts[0]
+            outcomes = parts[1:3]
+            ok = await twitch_api_service.start_prediction(title, outcomes, duration)
+            await self.queue_message(channel_id, "Prediction started." if ok else "Failed to start prediction (check token/scopes).")
             return
 
         if cmd == "accountage":

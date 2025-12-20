@@ -215,3 +215,39 @@ async def set_channel_title(channel_login: str, title: str) -> bool:
             json={"title": title[:140]},
         )
         return resp.status_code in (200, 204)
+
+
+async def start_poll(title: str, choices: list[str], duration: int = 120) -> bool:
+    broadcaster_id = settings.twitch_broadcaster_id or settings.twitch_bot_id
+    if not broadcaster_id:
+        return False
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            "https://api.twitch.tv/helix/polls",
+            headers=await _auth_headers(use_app_token=False, use_broadcaster_token=True),
+            json={
+                "broadcaster_id": broadcaster_id,
+                "title": title[:60],
+                "choices": [{"title": c[:25]} for c in choices[:5]],
+                "duration": max(15, min(duration, 1800)),
+            },
+        )
+        return resp.status_code in (200, 201)
+
+
+async def start_prediction(title: str, outcomes: list[str], duration: int = 120) -> bool:
+    broadcaster_id = settings.twitch_broadcaster_id or settings.twitch_bot_id
+    if not broadcaster_id:
+        return False
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            "https://api.twitch.tv/helix/predictions",
+            headers=await _auth_headers(use_app_token=False, use_broadcaster_token=True),
+            json={
+                "broadcaster_id": broadcaster_id,
+                "title": title[:45],
+                "outcomes": [{"title": o[:25]} for o in outcomes[:2]],
+                "prediction_window": max(30, min(duration, 1800)),
+            },
+        )
+        return resp.status_code in (200, 201)

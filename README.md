@@ -15,7 +15,7 @@ python -m jishbot.app.main
 ## 🔑 Configure `.env`
 - `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET`
 - `TWITCH_BOT_TOKEN` (OAuth, prefixed with `oauth:`)
-- `TWITCH_BROADCASTER_TOKEN` (optional; if set, used for !game/!title)
+- `TWITCH_BROADCASTER_TOKEN` (optional; if set, used for !game/!title/polls/predictions)
 - `TWITCH_BOT_NICK` (bot username)
 - `TWITCH_BOT_ID` (numeric user id; auto-resolves from nick if blank)
 - `TWITCH_BROADCASTER_ID` (optional; numeric id for broadcaster; falls back to bot id/login lookup)
@@ -30,13 +30,13 @@ python -m jishbot.app.main
 ### Twitch token scopes (important)
 - You can use:
   - One token for everything (put in `TWITCH_BOT_TOKEN`) that has scopes `channel:manage:broadcast` + `chat:read` + `chat:edit`, and belongs to the broadcaster.
-  - Or two tokens: `TWITCH_BOT_TOKEN` for chat (chat:read/chat:edit) and `TWITCH_BROADCASTER_TOKEN` for `!game/!title` (channel:manage:broadcast) belonging to the broadcaster.
+  - Or two tokens: `TWITCH_BOT_TOKEN` for chat (chat:read/chat:edit) and `TWITCH_BROADCASTER_TOKEN` for broadcast actions (game/title/poll/prediction).
+- If you use polls/predictions, add scopes `channel:manage:polls` and `channel:manage:predictions` (ideally on the broadcaster token).
 - Keep the `oauth:` prefix in env values. `TWITCH_BROADCASTER_ID` can be set if the broadcaster differs from the bot.
 
 ## 🖥️ Dashboard
 - Go to `http://localhost:8000/login`, enter `WEB_SECRET_KEY`, then manage at `/dashboard`.
-- Features: channel picker, create/edit/delete commands, timers, filters, link protection, giveaways.
-- Discord: add a webhook URL per channel; bot polls Twitch (~120s) and sends a single live notification when you go live.
+- Features: channel picker, create/edit/delete commands, timers, filters, link protection, giveaways, Discord live notifications (with test button).
 - API (JSON) uses header `X-Auth-Token: <WEB_SECRET_KEY>`:
   - `GET /health`
   - `GET/POST/DELETE /api/commands/{channel}`
@@ -55,6 +55,13 @@ python -m jishbot.app.main
 - `!timer add <name> <interval_minutes> <msg1|msg2>` / `!timer del <name>` (mods+)
 - `!giveaway start <keyword>` / `pick` / `end` (mods+)
 - `!counter set|inc|dec <key> [value]` (mods+)
+- `!slow <seconds>` / `!slowoff` (mods+)
+- `!emoteonly` / `!emoteoff` (mods+)
+- `!clear` (mods+)
+- `!shoutout <user>` (mods+)
+- `!permit <user>` allow links for 60s (mods+)
+- `!poll <duration_sec> <question> | <opt1> | <opt2> [...]` (mods+, scope: channel:manage:polls)
+- `!prediction <duration_sec> <title> | <outcome1> | <outcome2>` (mods+, scope: channel:manage:predictions)
 - `!accountage [user]`
 - `!followage [follower] [channel]`
 - `!8ball <question>`

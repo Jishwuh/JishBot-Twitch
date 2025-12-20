@@ -16,6 +16,21 @@ async def list_command_names(channel_id: str) -> List[str]:
         return [row["name"] for row in rows]
 
 
+async def list_allowed_command_names(channel_id: str, msg: Any) -> List[str]:
+    channel_id = channel_id.lower()
+    db = await database.get_db()
+    async with db.execute(
+        "SELECT name, permission FROM commands WHERE lower(channel_id)=? AND enabled=1 ORDER BY name",
+        (channel_id,),
+    ) as cursor:
+        rows = await cursor.fetchall()
+    allowed = []
+    for row in rows:
+        if await permissions_service.has_permission(msg, row["permission"]):
+            allowed.append(row["name"])
+    return allowed
+
+
 async def get_command(channel_id: str, name: str) -> Optional[dict]:
     channel_id = channel_id.lower()
     db = await database.get_db()

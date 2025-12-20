@@ -9,6 +9,7 @@ from jishbot.app.db import database
 MessageRecord = Tuple[float, str]
 
 _recent_messages: Dict[str, Dict[str, Deque[MessageRecord]]] = defaultdict(lambda: defaultdict(deque))
+_permits: Dict[str, Dict[str, float]] = defaultdict(dict)  # channel -> user_id/user_name -> expiry
 
 URL_REGEX = re.compile(r"https?://[^\s]+", re.IGNORECASE)
 
@@ -129,6 +130,12 @@ async def check_message(
     # Link protection
     link_settings = await _get_link_settings(channel_id)
     if link_settings["enabled"]:
+        permitted_until = max(
+            _permits[channel_id].get(user_id, 0),
+            _permits[channel_id].get(user_name.lower(), 0),
+        )
+        if now < permitted_until:
+            return None
         if is_mod and link_settings["allow_mod"]:
             return None
         if is_sub and link_settings["allow_sub"]:
@@ -143,3 +150,7 @@ async def check_message(
                 await _record_infraction(channel_id, user_id, user_name, "link protection")
                 return "link protection"
     return None
+
+
+def permit_user(channel_id: str, user_id_or_name: str, seconds: int = 60) -> None:
+    _permits[channel_id][user_id_or_name] = time.time() + seconds
