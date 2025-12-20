@@ -174,6 +174,26 @@ async def get_channel_info(channel_login: str) -> Optional[dict]:
         return data[0] if data else None
 
 
+async def get_stream_status(channel_login: str) -> tuple[bool, Optional[str], Optional[str]]:
+    """Return (is_live, title, game_name)."""
+    user = await get_user(channel_login)
+    if not user:
+        return False, None, None
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            "https://api.twitch.tv/helix/streams",
+            headers=await _auth_headers(),
+            params={"user_id": user["id"]},
+        )
+        if resp.status_code != 200:
+            return False, None, None
+        data = resp.json().get("data", [])
+        if not data:
+            return False, None, None
+        stream = data[0]
+        return True, stream.get("title"), stream.get("game_name")
+
+
 async def set_channel_game(channel_login: str, game_name: str) -> bool:
     broadcaster_id = settings.twitch_broadcaster_id or settings.twitch_bot_id
     if not broadcaster_id:

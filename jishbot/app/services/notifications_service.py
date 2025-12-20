@@ -64,8 +64,7 @@ async def _check_channel(channel: str) -> None:
     webhook = await get_webhook(channel)
     if not webhook:
         return
-    info = await twitch_api_service.get_channel_info(channel)
-    is_live = bool(info and info.get("is_live"))
+    is_live, title, game = await twitch_api_service.get_stream_status(channel)
     db = await database.get_db()
     async with db.execute(
         "SELECT last_status FROM notifications WHERE channel_id=?", (channel,)
@@ -73,8 +72,6 @@ async def _check_channel(channel: str) -> None:
         row = await cursor.fetchone()
         last_status = row["last_status"] if row else None
     if is_live and last_status != "live":
-        title = info.get("title") if info else ""
-        game = info.get("game_name") if info else ""
         try:
             await _send_webhook(webhook, title, game, channel)
             await _update_status(channel, "live")
